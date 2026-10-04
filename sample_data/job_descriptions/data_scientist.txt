@@ -1,0 +1,2 @@
+Data Scientist
+We need a Data Scientist with 2+ years of experience in Python, machine learning, SQL, Pandas and NumPy. Experience with Tableau or Power BI and a bachelor's degree is preferred.

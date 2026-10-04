@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f8">
+  <title>TalentLens · Resume intelligence</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="auth-loading">
+
+  <section class="auth-gate" id="auth-gate" aria-labelledby="auth-title">
+    <div class="auth-ambient-glow" aria-hidden="true"></div>
+
+    <div class="auth-card" id="auth-card">
+      <div class="auth-header">
+        <div class="auth-top-bar">
+          <div class="brand auth-brand">
+            <span class="brand-mark">✳</span>
+            <span>talent<span class="brand-light">lens</span></span>
+          </div>
+          <div class="auth-badge">
+            <span class="auth-badge-dot"></span>
+            <span>Local &amp; Private</span>
+          </div>
+        </div>
+
+        <p class="eyebrow" id="auth-eyebrow">PRIVATE RECRUITER WORKSPACE</p>
+        <h1 id="auth-title">Welcome back</h1>
+        <p class="auth-description" id="auth-description">Sign in to manage your candidate pool.</p>
+      </div>
+
+      <div class="auth-error-banner" id="auth-error-banner" role="alert" hidden>
+        <span class="auth-error-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+        </span>
+        <span class="auth-error-text" id="auth-error"></span>
+      </div>
+
+      <form id="auth-form" novalidate>
+        <!-- Name (only shown on initial setup) -->
+        <div class="auth-field-group" id="auth-name-wrap" hidden>
+          <label class="auth-label" for="auth-name">Your Full Name</label>
+          <div class="auth-input-box">
+            <span class="auth-field-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+              </svg>
+            </span>
+            <input id="auth-name" type="text" autocomplete="name" maxlength="100" placeholder="e.g. Jordan Davis">
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="auth-field-group">
+          <label class="auth-label" for="auth-email">Email Address</label>
+          <div class="auth-input-box">
+            <span class="auth-field-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+              </svg>
+            </span>
+            <input id="auth-email" type="email" autocomplete="username" required maxlength="254" placeholder="recruiter@example.com">
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="auth-field-group">
+          <div class="auth-label-row">
+            <label class="auth-label" for="auth-password">Password</label>
+            <span class="auth-label-hint" id="auth-password-hint" hidden>12+ characters</span>
+          </div>
+          <div class="auth-input-box">
+            <span class="auth-field-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+              </svg>
+            </span>
+            <input id="auth-password" type="password" autocomplete="current-password" required maxlength="256" placeholder="Enter password">
+            <button type="button" class="auth-pwd-toggle" id="auth-pwd-toggle" title="Show password" aria-label="Show password">
+              <svg class="pwd-eye-open" width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+              </svg>
+              <svg class="pwd-eye-closed" width="15" height="15" viewBox="0 0 20 20" fill="currentColor" hidden>
+                <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/>
+                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.064 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Confirm Password (only shown on setup) -->
+        <div class="auth-field-group" id="auth-confirm-wrap" hidden>
+          <label class="auth-label" for="auth-confirm-password">Confirm Password</label>
+          <div class="auth-input-box">
+            <span class="auth-field-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+            </span>
+            <input id="auth-confirm-password" type="password" autocomplete="new-password" maxlength="256" placeholder="Repeat your password">
+            <button type="button" class="auth-pwd-toggle" id="auth-confirm-pwd-toggle" title="Show password" aria-label="Show password">
+              <svg class="pwd-eye-open" width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+              </svg>
+              <svg class="pwd-eye-closed" width="15" height="15" viewBox="0 0 20 20" fill="currentColor" hidden>
+                <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/>
+                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.064 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setup Password Hints -->
+        <div class="auth-pwd-hints" id="auth-pwd-hints" hidden>
+          <div class="pwd-hint-row" id="hint-len">
+            <span class="hint-bullet">●</span>
+            <span>At least 12 characters</span>
+          </div>
+          <div class="pwd-hint-row" id="hint-match">
+            <span class="hint-bullet">●</span>
+            <span>Passwords match</span>
+          </div>
+        </div>
+
+        <p class="auth-help" id="auth-help" hidden>
+          This first account becomes the local workspace owner with administrative privileges.
+        </p>
+
+        <button class="button primary auth-submit" id="auth-submit" type="submit">
+          <span class="btn-text">Sign in</span>
+          <span class="btn-arrow" aria-hidden="true">→</span>
+        </button>
+      </form>
+
+      <div class="auth-foot">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" class="auth-foot-icon" aria-hidden="true">
+          <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span>Data and embeddings are saved strictly in your local SQLite file.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       Sidebar Navigation
+       ======================================================================== -->
+  <aside class="sidebar">
+    <a class="brand" href="#" id="brand-link">
+      <span class="brand-mark">✳</span>
+      <span>talent<span class="brand-light">lens</span></span>
+    </a>
+
+    <!-- Interactive Workspace Selector -->
+    <div class="workspace" id="workspace-card" title="Click to manage workspace" role="button" tabindex="0">
+      <span class="workspace-icon" id="workspace-icon">A</span>
+      <span>
+        <strong id="workspace-name">Acme Studio</strong>
+        <small id="workspace-tagline">Recruiting workspace</small>
+      </span>
+      <span class="chevron">⚙</span>
+    </div>
+
+    <!-- Workspace Links -->
+    <p class="nav-label">WORKSPACE</p>
+    <a class="nav-item active" href="#" id="nav-overview">
+      <span>▦</span>Overview
+    </a>
+    <a class="nav-item" href="#screening" id="nav-screening">
+      <span>◉</span>Candidate screening <b class="nav-count" id="nav-screen-count">0</b>
+    </a>
+    <a class="nav-item" href="#talent-pool" id="nav-talent-pool">
+      <span>♧</span>Talent pool <b class="nav-count" id="nav-pool-count">0</b>
+    </a>
+    <a class="nav-item" href="#job-descriptions" id="nav-job-descriptions">
+      <span>▤</span>Job descriptions
+    </a>
+
+    <!-- Manage Links -->
+    <p class="nav-label nav-spaced">MANAGE</p>
+    <a class="nav-item" href="#activity" id="nav-activity">
+      <span>◷</span>Activity <span class="activity-pulse" id="activity-pulse"></span>
+    </a>
+    <a class="nav-item" href="#settings" id="nav-settings">
+      <span>⚙</span>Settings
+    </a>
+
+    <!-- Sidebar Bottom: Help & Profile -->
+    <div class="sidebar-bottom">
+      <div class="help-card" id="help-card-trigger" role="button" tabindex="0">
+        <span class="help-icon">?</span>
+        <strong>Need a hand?</strong>
+        <p>Visit our guide to understand semantic scoring and extraction.</p>
+        <a href="#help" id="help-link">
+          Quick guide <span>↗</span>
+        </a>
+      </div>
+
+      <!-- Interactive User Profile Card -->
+      <div class="profile" id="profile-card" title="Click to change Admin name and role" role="button" tabindex="0">
+        <div class="avatar" id="sidebar-avatar">JD</div>
+        <span>
+          <strong id="sidebar-user-name">Jordan Davis</strong>
+          <small id="sidebar-user-role">Administrator</small>
+        </span>
+        <span class="edit-badge" title="Edit Admin">✎</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================
+       Main Content Area
+       ======================================================================== -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="breadcrumb">
+        <span id="breadcrumb-org">Acme Studio</span> <span>/</span> <strong>Overview</strong>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="notification-btn" aria-label="Notifications" title="System notifications">
+          ♧<i id="notification-badge"></i>
+        </button>
+        <div class="avatar small" id="topbar-avatar" title="Click to edit profile" role="button" tabindex="0">JD</div>
+        <button class="button secondary logout-button" id="logout-btn" type="button">Sign out</button>
+      </div>
+    </header>
+
+    <!-- Page Heading -->
+    <section class="page-heading">
+      <div>
+        <p class="eyebrow" id="current-date">MONDAY, SEPTEMBER 23, 2026</p>
+        <h1 id="greeting-header">Good morning, <span id="header-user-name">Jordan</span> <span>✦</span></h1>
+        <p class="subheading">Here's what's happening with your talent pipeline today.</p>
+      </div>
+      <div class="heading-actions">
+        <button id="demo-btn" class="button secondary" title="Load 10 pre-packaged candidate resumes into the vector store">
+          ✧ <span>Load demo candidates</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI Statistics Grid -->
+    <section class="stats-grid">
+      <article class="stat-card" id="stat-card-candidates" role="button" tabindex="0" title="Click to view full talent pool">
+        <div class="stat-top">
+          <span>Total candidates</span>
+          <span class="stat-icon blue">♧</span>
+        </div>
+        <strong id="stat-candidates">—</strong>
+        <p><span class="stat-note">In this screening session</span></p>
+        <div class="sparkline blue-line">▁▂▂▃▂▄▅▆▅▇</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-top">
+          <span>Top match score</span>
+          <span class="stat-icon green">↗</span>
+        </div>
+        <strong id="stat-score">—</strong>
+        <p><span class="stat-note" id="stat-score-note">Run an analysis to see matches</span></p>
+        <div class="sparkline green-line">▁▂▃▂▄▃▅▅▆▇</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-top">
+          <span>Resumes processed</span>
+          <span class="stat-icon violet">▤</span>
+        </div>
+        <strong id="stat-processed">0</strong>
+        <p><span class="stat-note">PDF and DOCX files</span></p>
+        <div class="sparkline purple-line">▁▁▂▂▃▃▄▅▆▇</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-top">
+          <span>Processing issues</span>
+          <span class="stat-icon amber">!</span>
+        </div>
+        <strong id="stat-failed">0</strong>
+        <p><span class="stat-note">Files that need attention</span></p>
+        <div class="sparkline amber-line">▁▁▁▁▂▁▁▁▁▁</div>
+      </article>
+    </section>
+
+    <!-- Main Workspace Content Grid -->
+    <section class="content-grid" id="screening">
+
+      <!-- Step 01: Resume Upload & Configuration Panel -->
+      <div class="panel upload-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">STEP 01</p>
+            <h2>Build your candidate pool</h2>
+            <p class="panel-desc">Upload resumes to get started. We’ll organize and score them against your role.</p>
+          </div>
+          <span class="step-check" id="upload-check">1</span>
+        </div>
+
+        <!-- Drag-and-drop Dropzone -->
+        <label class="dropzone" id="dropzone" for="file-input">
+          <input id="file-input" type="file" accept=".pdf,.docx" multiple>
+          <span class="upload-icon">↑</span>
+          <strong>Drop resumes here or <span>browse files</span></strong>
+          <small>PDF or DOCX · 25 per batch · 10 MB max each</small>
+        </label>
+
+        <!-- Selected Files List -->
+        <div id="file-list" class="file-list"></div>
+
+        <div class="upload-footer">
+          <span id="upload-hint">No files selected</span>
+          <button class="button primary" id="process-btn" disabled>
+            Process resumes <span>→</span>
+          </button>
+        </div>
+
+        <div class="divider">
+          <span>THEN</span>
+        </div>
+        
+        <div class="role-header-row">
+          <p class="small-copy">Add a role description or pick a quick preset:</p>
+        </div>
+
+        <!-- Quick Role Presets -->
+        <div class="quick-preset-bar">
+          <span class="preset-label">⚡ Presets:</span>
+          <button type="button" class="preset-chip active" data-preset="ml">ML Engineer</button>
+          <button type="button" class="preset-chip" data-preset="backend">Backend Engineer</button>
+          <button type="button" class="preset-chip" data-preset="ds">Data Scientist</button>
+        </div>
+
+        <!-- Job Description Configuration -->
+        <div class="field-row">
+          <label>
+            Job title
+            <input id="job-title" value="Machine Learning Engineer" placeholder="e.g. Product Designer">
+          </label>
+          <label>
+            Show top
+            <select id="top-k">
+              <option value="5" selected>5</option>
+              <option value="3">3</option>
+              <option value="10">10</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field-label" for="job-description">Job description</label>
+        <textarea
+          id="job-description"
+          placeholder="Paste the role requirements, skills, and experience you’re looking for…"
+        ></textarea>
+
+        <div class="analyze-row">
+          <span id="jd-count">0 characters</span>
+          <button class="button primary" id="analyze-btn" disabled>
+            Find top candidates <span>→</span>
+          </button>
+        </div>
+
+        <!-- Status & Feedback Messages -->
+        <div class="status-message" id="status-message" role="status"></div>
+      </div>
+
+      <!-- Step 02: Shortlist & Candidate Ranking Panel -->
+      <div class="panel ranking-panel">
+        <div class="ranking-heading">
+          <div>
+            <p class="eyebrow">YOUR SHORTLIST</p>
+            <h2>Candidate ranking</h2>
+            <p class="panel-desc">Candidates ranked by fit for your role.</p>
+          </div>
+          <div class="ranking-menu-wrapper">
+            <button class="icon-button more" id="ranking-options-btn" aria-label="Ranking options" title="Export or manage results">•••</button>
+            <div class="context-dropdown" id="ranking-context-menu">
+              <button type="button" id="export-json-btn">📥 Export as JSON</button>
+              <button type="button" id="export-csv-btn">📊 Export as CSV</button>
+              <button type="button" id="clear-results-btn">🗑️ Clear Shortlist</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-summary" id="results-summary">
+          <span class="live-dot"></span> Waiting for your first analysis
+        </div>
+
+        <div class="results-list" id="results-list">
+          <!-- Initial Empty State -->
+          <div class="empty-state">
+            <div class="empty-illustration">
+              <span>✳</span>
+              <i>↗</i>
+              <b>•••</b>
+            </div>
+            <strong>Your shortlist starts here</strong>
+            <p>Process a few resumes, add a job description, and your best-fit candidates will appear right here.</p>
+            <button class="text-button" id="empty-upload">
+              Upload resumes <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ranking-foot">
+          <span>Scores are decision support, not hiring recommendations.</span>
+          <button type="button" class="link-btn" id="scoring-info-btn">How scoring works ↗</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      TalentLens <span>·</span> Resume intelligence for thoughtful hiring
+      <span class="footer-right">Designed for better hiring decisions</span>
+    </footer>
+  </main>
+
+  <!-- ========================================================================
+       Interactive Modals & Drawers
+       ======================================================================== -->
+
+  <!-- Modal 1: Edit Profile / Admin Name Modal -->
+  <div class="modal-backdrop" id="profile-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">USER PROFILE</p>
+          <h3>Edit Admin & Recruiter Details</h3>
+        </div>
+        <button class="modal-close" data-close="profile-modal">×</button>
+      </div>
+      <form id="profile-form">
+        <div class="modal-body">
+          <div class="avatar-preview-row">
+            <div class="avatar large" id="modal-avatar-preview">JD</div>
+            <div>
+              <strong id="modal-avatar-name">Jordan Davis</strong>
+              <p class="hint-text">Avatar initials and greetings automatically sync across the dashboard.</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="input-admin-name">Admin Name</label>
+            <input type="text" id="input-admin-name" required placeholder="e.g. Jordan Davis">
+          </div>
+          <div class="form-group">
+            <label for="input-admin-role">Designation / Role</label>
+            <input type="text" id="input-admin-role" required placeholder="e.g. Lead Technical Recruiter">
+          </div>
+          <div class="form-group">
+            <label for="input-admin-email">Email Address</label>
+            <input type="email" id="input-admin-email" placeholder="e.g. jordan@example.com">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="button secondary" data-close="profile-modal">Cancel</button>
+          <button type="submit" class="button primary">Save Profile <span>✓</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Activity Log Drawer/Modal -->
+  <div class="modal-backdrop" id="activity-modal">
+    <div class="modal-box large-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">AUDIT TRAIL</p>
+          <h3>System & Screening Activity</h3>
+        </div>
+        <button class="modal-close" data-close="activity-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint-text">Chronological history of candidate ingestion, FAISS indexing, and matching operations.</p>
+        <div class="activity-timeline" id="activity-timeline">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="button secondary" id="clear-activity-btn">Clear Log</button>
+        <button type="button" class="button primary" data-close="activity-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Settings Modal -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">PREFERENCES</p>
+          <h3>Workspace & Algorithm Settings</h3>
+        </div>
+        <button class="modal-close" data-close="settings-modal">×</button>
+      </div>
+      <form id="settings-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="input-workspace-name">Workspace / Organization Name</label>
+            <input type="text" id="input-workspace-name" required value="Acme Studio">
+          </div>
+          <div class="form-group">
+            <label for="input-default-k">Default Candidates to Surface (Top-K)</label>
+            <select id="input-default-k">
+              <option value="3">Top 3 Candidates</option>
+              <option value="5" selected>Top 5 Candidates (Recommended)</option>
+              <option value="10">Top 10 Candidates</option>
+            </select>
+          </div>
+          <div class="weights-card">
+            <strong>Current Scoring Weights:</strong>
+            <ul>
+              <li><strong>Semantic Similarity:</strong> 50% (Dense SBERT cosine retrieval)</li>
+              <li><strong>Skill Match:</strong> 30% (Canonical dictionary overlap)</li>
+              <li><strong>Experience Match:</strong> 10% (Years required vs actual)</li>
+              <li><strong>Education Match:</strong> 10% (Degree requirements)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="button secondary" data-close="settings-modal">Cancel</button>
+          <button type="submit" class="button primary">Save Settings <span>✓</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Talent Pool Explorer Modal -->
+  <div class="modal-backdrop" id="talent-pool-modal">
+    <div class="modal-box large-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">INVENTORY</p>
+          <h3>Active Talent Pool Candidates</h3>
+        </div>
+        <button class="modal-close" data-close="talent-pool-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="pool-search-bar">
+          <input type="text" id="pool-search-input" placeholder="Filter candidates by name or skill…">
+        </div>
+        <div class="talent-pool-list" id="talent-pool-list">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="button primary" data-close="talent-pool-modal">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Job Description Presets Modal -->
+  <div class="modal-backdrop" id="jd-modal">
+    <div class="modal-box large-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">TEMPLATES</p>
+          <h3>Job Description Library</h3>
+        </div>
+        <button class="modal-close" data-close="jd-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint-text">Choose a pre-defined role template to populate the screening query instantly.</p>
+        <div class="jd-templates-grid">
+          <div class="jd-card">
+            <h4>Machine Learning Engineer</h4>
+            <p>Requires Python, Machine Learning, Deep Learning, PyTorch/TensorFlow, SQL, AWS.</p>
+            <button type="button" class="button secondary load-jd-btn" data-role="ml">Apply Template →</button>
+          </div>
+          <div class="jd-card">
+            <h4>Backend Engineer</h4>
+            <p>Requires 3+ years experience, Python, FastAPI/Django, SQL, PostgreSQL, Docker, Git.</p>
+            <button type="button" class="button secondary load-jd-btn" data-role="backend">Apply Template →</button>
+          </div>
+          <div class="jd-card">
+            <h4>Data Scientist</h4>
+            <p>Requires 2+ years experience, Python, Machine Learning, SQL, Pandas, NumPy, Tableau/Power BI.</p>
+            <button type="button" class="button secondary load-jd-btn" data-role="ds">Apply Template →</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="button secondary" data-close="jd-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: How Scoring Works Modal -->
+  <div class="modal-backdrop" id="scoring-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">METHODOLOGY</p>
+          <h3>How Candidate Scoring Works</h3>
+        </div>
+        <button class="modal-close" data-close="scoring-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="formula-box">
+          <code>Job Match Score = 0.50 × Semantic + 0.30 × Skill + 0.10 × Experience + 0.10 × Education</code>
+        </div>
+        <div class="scoring-breakdown-list">
+          <div class="breakdown-item">
+            <span class="badge blue">50%</span>
+            <div>
+              <strong>Semantic Similarity</strong>
+              <p>Dense vector cosine similarity via Sentence-BERT (<code>all-MiniLM-L6-v2</code>) and FAISS inner-product retrieval.</p>
+            </div>
+          </div>
+          <div class="breakdown-item">
+            <span class="badge green">30%</span>
+            <div>
+              <strong>Skill Match Ratio</strong>
+              <p>Intersection between canonical skills in the job description and candidate profile.</p>
+            </div>
+          </div>
+          <div class="breakdown-item">
+            <span class="badge violet">10%</span>
+            <div>
+              <strong>Experience Match</strong>
+              <p>Ratio of candidate's verified years of experience to role requirements.</p>
+            </div>
+          </div>
+          <div class="breakdown-item">
+            <span class="badge amber">10%</span>
+            <div>
+              <strong>Education Match</strong>
+              <p>Validation of academic degrees (B.Tech, Masters, Computer Science, etc.).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="button primary" data-close="scoring-modal">Understood</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Quick Guide / Help Modal -->
+  <div class="modal-backdrop" id="help-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">DOCUMENTATION</p>
+          <h3>TalentLens Quick Help</h3>
+        </div>
+        <button class="modal-close" data-close="help-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <h4>Getting Started</h4>
+        <ol class="help-steps">
+          <li><strong>Load Candidates:</strong> Click <em>Load demo candidates</em> or drag & drop custom PDF / DOCX resumes.</li>
+          <li><strong>Set Role:</strong> Type your role requirements or pick a quick preset chip.</li>
+          <li><strong>Find Top Matches:</strong> Click <em>Find top candidates →</em> to view ranked fit scores and explanations.</li>
+          <li><strong>Inspect Explanations:</strong> Click any candidate row to see matched skills, missing skills, and score breakdown.</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="button primary" data-close="help-modal">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Dropdown Menu -->
+  <div class="notification-dropdown" id="notification-dropdown">
+    <div class="notification-head">
+      <strong>System Notifications</strong>
+      <button type="button" class="link-btn" id="clear-notifications-btn">Clear</button>
+    </div>
+    <div class="notification-list" id="notification-list">
+      <!-- Populated via JS -->
+    </div>
+  </div>
+
+  <!-- Floating Toast Notification Container -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Client Application Script -->
+  <script src="/static/app.js"></script>
+</body>
+</html>
