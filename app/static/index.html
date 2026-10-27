@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Core Stylesheet -->
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=20261025-clean-ui">
 </head>
 <body class="auth-loading">
 
@@ -47,7 +47,7 @@
       </div>
 
       <form id="auth-form" novalidate>
-        <!-- Name (only shown on initial setup) -->
+        <!-- Name (shown for any account registration) -->
         <div class="auth-field-group" id="auth-name-wrap" hidden>
           <label class="auth-label" for="auth-name">Your Full Name</label>
           <div class="auth-input-box">
@@ -100,7 +100,7 @@
           </div>
         </div>
 
-        <!-- Confirm Password (only shown on setup) -->
+        <!-- Confirm Password (shown for any account registration) -->
         <div class="auth-field-group" id="auth-confirm-wrap" hidden>
           <label class="auth-label" for="auth-confirm-password">Confirm Password</label>
           <div class="auth-input-box">
@@ -144,6 +144,11 @@
           <span class="btn-arrow" aria-hidden="true">→</span>
         </button>
       </form>
+
+      <p class="auth-mode-switch" id="auth-mode-switch">
+        <span id="auth-mode-prompt">New recruiter?</span>
+        <button type="button" class="auth-mode-button" id="auth-mode-toggle">Create account</button>
+      </p>
 
       <div class="auth-foot">
         <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" class="auth-foot-icon" aria-hidden="true">
@@ -208,15 +213,6 @@
         </a>
       </div>
 
-      <!-- Interactive User Profile Card -->
-      <div class="profile" id="profile-card" title="Click to change Admin name and role" role="button" tabindex="0">
-        <div class="avatar" id="sidebar-avatar">JD</div>
-        <span>
-          <strong id="sidebar-user-name">Jordan Davis</strong>
-          <small id="sidebar-user-role">Administrator</small>
-        </span>
-        <span class="edit-badge" title="Edit Admin">✎</span>
-      </div>
     </div>
   </aside>
 
@@ -227,9 +223,6 @@
 
     <!-- Topbar -->
     <header class="topbar">
-      <div class="breadcrumb">
-        <span id="breadcrumb-org">Acme Studio</span> <span>/</span> <strong>Overview</strong>
-      </div>
       <div class="top-actions">
         <button class="icon-button" id="notification-btn" aria-label="Notifications" title="System notifications">
           ♧<i id="notification-badge"></i>
@@ -244,7 +237,6 @@
       <div>
         <p class="eyebrow" id="current-date">MONDAY, SEPTEMBER 23, 2026</p>
         <h1 id="greeting-header">Good morning, <span id="header-user-name">Jordan</span> <span>✦</span></h1>
-        <p class="subheading">Here's what's happening with your talent pipeline today.</p>
       </div>
       <div class="heading-actions">
         <button id="demo-btn" class="button secondary" title="Load 10 pre-packaged candidate resumes into the vector store">
@@ -328,10 +320,6 @@
           </button>
         </div>
 
-        <div class="divider">
-          <span>THEN</span>
-        </div>
-        
         <div class="role-header-row">
           <p class="small-copy">Add a role description or pick a quick preset:</p>
         </div>
@@ -350,13 +338,9 @@
             Job title
             <input id="job-title" value="Machine Learning Engineer" placeholder="e.g. Product Designer">
           </label>
-          <label>
+          <label class="top-k-label" for="top-k">
             Show top
-            <select id="top-k">
-              <option value="5" selected>5</option>
-              <option value="3">3</option>
-              <option value="10">10</option>
-            </select>
+            <input id="top-k" type="number" min="1" step="1" value="5" inputmode="numeric" aria-label="Number of candidates to show">
           </label>
         </div>
 
@@ -423,11 +407,6 @@
 
     </section>
 
-    <!-- Footer -->
-    <footer>
-      TalentLens <span>·</span> Resume intelligence for thoughtful hiring
-      <span class="footer-right">Designed for better hiring decisions</span>
-    </footer>
   </main>
 
   <!-- ========================================================================
@@ -690,6 +669,6 @@
   <div class="toast" id="toast"></div>
 
   <!-- Client Application Script -->
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20261025-clean-ui-restore"></script>
 </body>
 </html>

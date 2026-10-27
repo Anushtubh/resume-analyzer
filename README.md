@@ -1,168 +1,296 @@
-# AI-Based Resume Analyzer & Intelligent Candidate Ranking System
+# TalentLens — AI Resume Analyzer & Candidate Ranking System
 
-This repository contains a locally runnable college mini-project prototype: resume upload, PDF/DOCX extraction, preprocessing, rule-based information extraction, SBERT embeddings, FAISS cosine retrieval, explainable matching, weighted ranking, and a responsive web dashboard served by FastAPI.
+A locally runnable candidate-screening application. Recruiters upload PDF or DOCX resumes, provide a job description, and review candidates retrieved and ranked by the implemented NLP pipeline in a browser dashboard.
 
-## Problem statement
+> **Project status:** college/demo prototype, not a production hiring system. Scores are heuristic matching signals, not hiring probabilities. Human review is required.
 
-Recruiters often spend significant time manually comparing resumes against a job description. This prototype demonstrates how semantic search plus transparent matching signals can help surface relevant candidates for review.
+## What it does
 
-## Objectives
+- Supports recruiter account creation, sign-in, and sign-out. Resume records and FAISS indexes are isolated by account.
+- Accepts multiple PDF and DOCX resumes, with per-file error reporting.
+- Extracts selectable PDF text with PyMuPDF and DOCX paragraphs/tables with `python-docx`.
+- Normalizes extracted text and creates candidate profiles containing skills, education, roles, experience, companies, projects, and certifications using configurable rules plus an optional local BERT-NER checkpoint.
+- Generates one normalized Sentence-Transformer embedding per candidate profile and one per job description.
+- Retrieves semantically similar candidate profiles using a per-user FAISS index.
+- Calculates skill, basic experience, and basic education matches, then ranks retrieved candidates.
+- Stores recruiter accounts, original resume bytes (in local mode), candidate profiles, and embeddings in SQLite.
+- Supports optional S3 storage for original resumes; local SQLite storage remains the default.
+- Includes 10 synthetic demo resumes and three sample job descriptions. Demo rankings are calculated by the same pipeline as uploaded resumes.
 
-- Accept multiple PDF and DOCX resumes.
-- Extract and clean resume text without losing technical terms.
-- Build structured candidate profiles using configurable rules and a skill dictionary.
-- Embed candidate profiles and job descriptions with `all-MiniLM-L6-v2`.
-- Retrieve semantically relevant candidates with FAISS.
-- Explain a basic match score with matched and missing skills.
+## Architecture and request flow
 
-## Architecture
-
-```text
-Browser (HTML/CSS/vanilla JS)
-        │ fetch + multipart forms / JSON
-        ▼
-FastAPI transport layer (app/api.py)
-  /api/process    /api/demo    /api/analyze    /api/status
-        │
-        ├── PDF/DOCX parser ──► text normalization ──► candidate profile extraction
-        │                                                   │
-        │                                                   ▼
-        │                              SentenceTransformer (MiniLM-L6-v2)
-        │                                                   │ normalized vectors
-        │                                                   ▼
-        │                                      FAISS IndexFlatIP
-        │                                                   │ top-K cosine retrieval
-        └──────────────────────────────► skill / experience / education matching
-                                                            │
-                                                            ▼
-                                                   weighted ranking
-                                                            │
-                                                            ▼
-                                             ranked candidates + explanations
+```mermaid
+flowchart TD
+    A[Browser dashboard<br/>HTML, CSS, JavaScript] -->|HTTP requests| B[FastAPI app<br/>app/api.py]
+    B --> C[PDF/DOCX parser]
+    C --> D[Preprocessing]
+    D --> E[Rule extraction + local BERT-NER]
+    E --> F[Candidate profile]
+    F --> G[Sentence-Transformer embedding]
+    G --> H[(SQLite: file, profile, embedding)]
+    G --> I[(FAISS: normalized resume vectors)]
+    J[Job description] --> K[Preprocess + rule-based requirement extraction]
+    K --> L[Job embedding]
+    L --> I
+    I --> M[Top-K semantic retrieval]
+    M --> N[Skill/experience/education matching]
+    N --> O[Weighted ranking]
+    O --> B
+    B --> A
 ```
 
-### Request and data flow
+### Resume processing
 
-1. The browser accepts multiple PDF/DOCX files and posts them to `/api/process`. The demo button instead asks `/api/demo` to read the synthetic files shipped in `sample_data/resumes`.
-2. `document_parser.py` extracts selectable PDF text using PyMuPDF or paragraphs and tables from DOCX using python-docx. Empty or unsupported files are reported individually.
-3. `preprocessing.py` normalizes whitespace and punctuation and splits common resume sections. `information_extractor.py` uses a configurable skill dictionary plus lightweight heuristics to create `CandidateProfile` records. Profiles are persisted as JSON under `data/processed/`.
-4. `embedding_service.py` lazily loads `sentence-transformers/all-MiniLM-L6-v2` once per process and embeds candidate text. Vectors are stored with each profile in SQLite. Analysis rebuilds a user-scoped FAISS inner-product index from those saved vectors; with normalized vectors, inner product is cosine similarity.
-5. The browser submits a job title, description, and K to `/api/analyze`. The description is preprocessed and embedded; FAISS retrieves the K most semantically similar candidates.
-6. `matching_service.py` derives skill overlap, experience, and education signals. `ranking_service.py` combines those with semantic similarity using 50% semantic, 30% skills, 10% experience, and 10% education weights. Results return candidate profile details, score components, matched skills, missing skills, and cleaned resume text.
-7. `app/static/` contains the single-page browser interface: HTML structure, responsive CSS, and JavaScript for uploads, API calls, status, and candidate details. It has no frontend build step or separate Node runtime.
+1. The dashboard sends selected files to `POST /api/process`; the demo button calls `POST /api/demo`.
+2. The API validates file extension and size, then `document_parser.py` extracts text.
+3. `information_extractor.py` preprocesses the text, finds sections, applies the technology/role/experience rules, and merges entities predicted by the local BERT-NER checkpoint when available.
+4. The candidate profile is converted into embedding text and encoded by `all-MiniLM-L6-v2`.
+5. SQLite stores the structured profile and embedding. Original files stay in SQLite in local mode, or are sent to S3 in optional S3 mode. The normalized vector is also added to that user's FAISS index; the mapping file connects FAISS positions to candidate IDs.
 
-### Components
+### Job analysis and ranking
 
-| Path | Responsibility |
-| --- | --- |
-| `app/api.py` | FastAPI routes, request validation, in-memory session state, pipeline orchestration |
-| `app/static/index.html` | Dashboard layout and workflow |
-| `app/static/styles.css` | Responsive visual system and component styling |
-| `app/static/app.js` | File selection, API integration, ranking and detail rendering |
-| `app/config.py` | Paths for data, FAISS artifacts, and model name |
-| `app/services/document_parser.py` | PDF and DOCX extraction |
-| `app/services/preprocessing.py` | Text cleanup and common section detection |
-| `app/services/information_extractor.py` | Candidate profile model and heuristic extraction |
-| `app/services/embedding_service.py` | Cached MiniLM model access and vector creation |
-| `app/services/faiss_service.py` | FAISS build, persistence, and top-K search |
-| `app/services/matching_service.py` | Skill, experience, and education match explanations |
-| `app/services/ranking_service.py` | Weighted score and descending candidate order |
-| `app/utils/` | Whitespace/skill normalization and JSON persistence helpers |
-| `sample_data/` | Synthetic PDF/DOCX resumes and example job descriptions |
-| `tests/` | Unit tests for parsing, extraction, embeddings, retrieval, and matching |
-| `tools/generate_demo_data.py` | Demo fixture generation |
+1. The dashboard sends the job title, job description, and requested top-K value to `POST /api/analyze`.
+2. The description is preprocessed and embedded with the same Sentence-Transformer used for resumes. The job title is returned for display; the description drives the current embedding and matching process.
+3. FAISS performs cosine-similarity retrieval using normalized vectors and `IndexFlatIP`.
+4. For retrieved candidates, the matching service compares skills and applies simple experience and education heuristics. The JD currently uses rule/dictionary extraction for these requirements; it is **not** passed through the resume BERT-NER service.
+5. The ranking service sorts candidates by the weighted score and returns results to the browser as JSON.
 
-### Accounts, database, and upload capacity
+## Technology stack
 
-- The first visit shows a one-time account setup form. The first account becomes the owner; later sign-ins use that account. Passwords are stored as salted PBKDF2-SHA256 hashes and the browser receives an HttpOnly, SameSite=Strict, signed session cookie.
-- SQLite stores each account, original uploaded PDF/DOCX bytes, extracted profile, and embedding in `data/talentlens.sqlite3`. Resume records are scoped to their owner and persist across server restarts. Model files stay under the ignored `model_cache/` directory.
-- The UI queues any selected number of resumes and submits them in batches of at most 25. The server accepts up to 25 files per request, 10 MB per file, and 100 MB combined per batch. A 100-resume set is four batches; processed resumes stay in the pool as further batches are added.
-- For a classroom demo or one recruiter on one computer, SQLite is a good fit for hundreds or thousands of small records. Processing capacity depends mainly on CPU/RAM, file size, extraction quality, and embedding speed—not a fixed global resume count. Start with 25 per batch; if 100 is slow, use batches of 10–25 and wait for each to complete. For sustained larger workloads, move to PostgreSQL for account/profile metadata, private object storage for resume files, and a background job queue with progress updates.
-- This prototype is for local use. SQLite and this app do not encrypt resume files at rest or provide production-grade account administration, password reset, TLS, or automated retention/deletion. Before exposing it to a network or using real candidate data, add those controls and use private managed storage. Do not commit the database or session secret.
+- **API/server:** Python, FastAPI, Uvicorn
+- **Browser UI:** HTML, CSS, vanilla JavaScript
+- **Document extraction:** PyMuPDF, python-docx
+- **Resume entity extraction:** configurable rule-based extraction and locally fine-tuned BERT token classifier (Transformers/PyTorch)
+- **Embeddings:** Sentence-Transformers, `sentence-transformers/all-MiniLM-L6-v2`
+- **Vector search:** FAISS `IndexFlatIP` with L2-normalized vectors (cosine similarity)
+- **Persistent local storage:** SQLite
+- **Optional object storage:** AWS S3 via boto3 (opt-in; local mode remains the default)
+- **Testing:** pytest
 
-## Folder structure
+## Repository structure
 
 ```text
-app/
-  api.py
-  static/  # browser dashboard (HTML, CSS, JavaScript)
-  config.py
-  services/  # parser, preprocessing, extraction, embeddings, FAISS, matching, ranking
-  utils/
-data/processed/  # generated candidate JSON profiles
-sample_data/     # 10 synthetic resumes and 3 job descriptions
-tests/
-tools/generate_demo_data.py
-vector_store/    # generated FAISS index and candidate mapping
-requirements.txt
+resume-analyzer/
+├── app/
+│   ├── api.py                    # FastAPI entry point, auth, routes, pipeline orchestration
+│   ├── config.py                 # Runtime paths and embedding model name
+│   ├── storage.py                # SQLite schema and persistence operations
+│   ├── services/
+│   │   ├── document_parser.py    # PDF/DOCX text extraction
+│   │   ├── preprocessing.py      # Text normalization and section detection
+│   │   ├── information_extractor.py # Candidate profile, rules, and NER integration
+│   │   ├── ner_service.py        # Local fine-tuned BERT-NER loading and inference
+│   │   ├── file_storage.py       # Optional S3 resume-object storage
+│   │   ├── embedding_service.py  # Cached Sentence-Transformer embeddings
+│   │   ├── faiss_service.py      # FAISS index build, save/load, and search
+│   │   ├── matching_service.py   # Skill, experience, and education signals
+│   │   └── ranking_service.py    # Final score and descending ranking
+│   ├── static/
+│   │   ├── index.html            # Login and dashboard structure
+│   │   ├── app.js                # API calls, upload flow, and result rendering
+│   │   └── styles.css             # Responsive styling
+│   └── utils/                    # Shared text and file helpers
+├── data/
+│   ├── resumes/                  # Placeholder; local uploads are in SQLite or S3
+│   ├── processed/                # Reserved local processing directory
+│   └── ner_*/                    # Local NER training datasets, when present
+├── models/                       # Local NER checkpoints, when present
+├── artifacts/                    # Local NER metrics and reports, when present
+├── vector_store/users/<id>/      # Runtime FAISS index and candidate mapping
+├── sample_data/
+│   ├── resumes/                  # 10 synthetic demo resumes
+│   └── job_descriptions/         # Three demo job descriptions
+├── tools/
+│   ├── generate_demo_data.py
+│   ├── generate_synthetic_ner.py
+│   └── train_ner.py
+├── tests/
+├── deploy/aws/                   # EC2 + S3 setup guidance
+├── requirements.txt
+└── README.md
 ```
+
+## Local data and storage
+
+| Data | Location | Purpose |
+|---|---|---|
+| SQLite database | `data/talentlens.sqlite3` | Accounts, profiles, embeddings, and resume-storage metadata; local mode also stores original bytes |
+| Session signing secret | `data/.session_secret` | Signs local session cookies; generated on first server start |
+| FAISS index | `vector_store/users/<user_id>/resume.index` | Fast semantic search over that user's resume embeddings |
+| FAISS mapping | `vector_store/users/<user_id>/mapping.json` | Maps FAISS row numbers to candidate IDs |
+| NER checkpoint | `models/resume_ner_synthetic_3000/best/` | Token-classification model and tokenizer used by resume extraction |
+| SBERT cache | `model_cache/` | Locally cached Sentence-Transformer files after first download |
+
+SQLite is the durable source of truth for accounts, profiles, and embeddings. If the FAISS index is missing or does not match the stored candidate IDs, the API can rebuild it from embeddings in SQLite. In default local mode, uploaded documents are stored as SQLite BLOBs, not as separate files under `data/resumes`.
+
+The NER training corpora, fine-tuned checkpoint, and evaluation artifacts are local machine-learning assets. The application does not download the fine-tuned checkpoint automatically. If a checkpoint is available in one of the paths described below, the API loads it locally; if none is present or inference fails, candidate extraction falls back to the rule-based pipeline. These assets are not required to start the application. Sentence-Transformers loads SBERT and downloads it to the local cache on first use when needed.
+
+## Optional AWS deployment (EC2 + S3)
+
+The API can store newly uploaded originals in a private S3 bucket while SQLite
+continues to hold accounts, profiles, embeddings, and S3 object references.
+Set `RESUME_STORAGE_BACKEND=s3`, `S3_BUCKET`, and `AWS_REGION` to enable it;
+leave the backend unset or set it to `sqlite` for the current local behavior.
+On EC2, use a narrowly scoped instance role instead of long-lived AWS keys.
+
+EC2 is the application host; S3 is only the original-document object store.
+SQLite and FAISS remain on one EC2 EBS volume in this prototype, so this setup
+is single-instance and should not be scaled horizontally. Deployment and
+security steps are documented in [`deploy/aws/README.md`](deploy/aws/README.md).
+No AWS resources are created automatically by the application.
+
+### Runtime configuration
+
+Local SQLite storage is the default and needs no AWS configuration. To select
+S3 storage, create a `.env` file from `.env.example` and set:
+
+```env
+RESUME_STORAGE_BACKEND=s3
+S3_BUCKET=your-private-bucket-name
+S3_RESUME_PREFIX=resumes
+AWS_REGION=your-aws-region
+```
+
+The application uses the standard boto3 credential lookup. For EC2, attach an
+IAM instance role with access limited to the resume bucket and prefix. The
+embedding model is currently fixed in `app/config.py`; the `MODEL_NAME` sample
+in `.env.example` is not read as an override.
 
 ## Installation
 
-Python 3.10+ is recommended.
+Python 3.10 or newer is recommended. From the repository root:
 
-```bash
-python -m venv .venv
-# Windows PowerShell
+### Windows PowerShell
+
+```powershell
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-# macOS/Linux
-source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-The first SBERT analysis downloads `sentence-transformers/all-MiniLM-L6-v2` from Hugging Face and caches it locally. An internet connection is only needed for that first model download; the application itself is local.
-
-## Run the dashboard
-
-From the project root:
+### macOS/Linux
 
 ```bash
-python -m uvicorn app.api:app --reload
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-On Windows PowerShell, from the `resume_analyzer` directory, start the server with `\.venv\Scripts\python.exe -m uvicorn app.api:app --host 127.0.0.1 --port 8000`. Keep that terminal open and visit http://127.0.0.1:8000. Create the first workspace account, then upload PDF/DOCX files or choose **Load demo candidates**. Upload batches of up to 25 are added to your saved pool. Add a job description and choose **Find top candidates**. The dashboard shows ranked matches and an explainable score breakdown. The first use downloads the embedding model and can take several minutes.
+The first resume-processing request may download `all-MiniLM-L6-v2` from Hugging Face into the local cache. Internet access is needed for that initial download unless the model is already cached.
 
-## Demo workflow
+### Optional GPU training
 
-The included synthetic dataset covers machine learning, data science, web, Python backend, analytics, cloud, AI, backend, software, and NLP profiles. For a compelling demonstration:
+The fine-tuning script uses CUDA when the installed PyTorch build can see a CUDA-compatible GPU. For a GPU-required run, pass `--require-cuda`; the trainer will stop instead of silently falling back to CPU. Install a PyTorch build compatible with your driver and verify `torch.cuda.is_available()` before training. CPU can be used for inference and may be used for training if the GPU-required flag is omitted, but training will take longer.
 
-1. Load the included sample resumes.
-2. Use `sample_data/job_descriptions/machine_learning_engineer.txt` as the job description.
-3. Analyze candidates with K=5.
-4. Expand a candidate to see semantic similarity, matched/missing skills, experience, education, projects, and cleaned resume text.
+## Run the application
 
-## Scoring
+From the project root, with the environment activated:
+
+```bash
+python -m uvicorn app.api:app --host 127.0.0.1 --port 8000
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000). Keep the terminal running while you use the dashboard.
+
+### First-run and demo workflow
+
+1. Create a recruiter account from the sign-in screen, or sign in with an existing account. Additional accounts can also be registered.
+2. Select **Load demo candidates** to process the included synthetic resumes, or upload your own PDF/DOCX resumes.
+3. For uploads, choose up to 25 resumes per processing batch. The per-file limit is 10 MB and the combined batch limit is 100 MB. If more files are queued, process the next batch after the current one finishes.
+4. Enter a job title and job description. You can use a sample file under `sample_data/job_descriptions/`.
+5. Choose K and click **Find top candidates**.
+6. Review the ranking, score components, matched/missing skills, and extracted candidate details.
+
+The demo resumes and job descriptions are synthetic fixtures for demonstrating the workflow; their results are produced by the implemented processing pipeline, not hardcoded rankings.
+
+## Ranking formula
 
 ```text
 Job Match Score =
-  0.5 * semantic similarity
-  + 0.3 * skill match
-  + 0.1 * experience match
-  + 0.1 * education match
+    0.50 × semantic similarity
+  + 0.30 × skill match
+  + 0.10 × experience match
+  + 0.10 × education match
 ```
 
-Every component is bounded between 0 and 1. The result is a transparent prototype ranking signal, not a scientifically validated hiring probability.
+Each component is bounded between 0 and 1. Skill match is the fraction of distinct required JD skills found in the candidate profile. The experience and education components are simple heuristics. The semantic score is the FAISS retrieval similarity. The final score is a prototype ranking signal—not a hiring probability, guarantee of qualification, or scientifically calibrated decision.
+
+## Current fine-tuned NER model
+
+The API searches for `models/resume_ner_synthetic_3000/best/` first, then local 2,000-example, 1,000-example, and original checkpoints. The model is loaded lazily and reused within the server process. It is a BERT-based token-classification model fine-tuned from `BAAI/bge-small-en-v1.5` with 15 BIO labels: `O` plus begin/inside tags for skills, education, companies, job roles, experience, projects, and certifications. Rules remain active alongside NER, including the configurable technical-skill dictionary. The job description is not passed through resume NER; JD skills are extracted with the rule dictionary used by matching.
+
+### Training data and tuning
+
+- Training: 207 human-annotated resumes plus 3,000 synthetic training resumes = **3,207 documents** and **3,534 chunks**.
+- Validation: 44 human-annotated resumes; used for tuning and checkpoint selection.
+- Test: 45 human-annotated resumes; evaluated after choosing the configuration.
+- Hyperparameter sweep: learning rates `5e-6` and `1e-5`; batch sizes 8 and 16; two epochs per trial.
+- Selected settings: learning rate `1e-5`, batch size 8, weight decay `0.01`, seed 42, max length 512, best epoch 2.
+- Training hardware for the saved checkpoint: NVIDIA GeForce RTX 4050 Laptop GPU.
+
+Final reported test metrics use exact entity-span matching:
+
+| Metric | Score |
+|---|---:|
+| Precision | 0.2949 |
+| Recall | 0.5143 |
+| Exact-span F1 | 0.3748 |
+
+Skill F1 was 0.4334, job-role F1 0.4170, experience F1 0.3453, company F1 0.2698, and education F1 0.1997. The test set contained no positive project or certification examples, so those labels could not be meaningfully evaluated. Achievements are not a current NER label.
+
+**Evaluation caveat:** this small test split also appeared in earlier development reports. The current hyperparameter sweep selected settings using validation data, but the test set is not an independent benchmark. Treat these scores as internal prototype measurements, not evidence of production-level accuracy.
+
+The tuning report and machine-readable metrics were generated under `artifacts/`
+on the training machine. These local reports and model files are not required
+to run the application and may not be present in a fresh GitHub clone.
+
+### Reproduce the latest fine-tuning stage
+
+This command reproduces the recorded 3,000-example synthetic fine-tuning stage.
+The human dataset, three synthetic training batches, prior 2,000-example
+checkpoint, and output directories must exist locally; these training assets
+are not downloaded automatically and may not be included in a fresh clone.
+
+```bash
+python tools/train_ner.py \
+  --require-cuda \
+  --dataset-dir data/ner_train_dataset \
+  --synthetic-train data/ner_synthetic_1000/train.jsonl \
+  --synthetic-train data/ner_synthetic_1000_batch2/train.jsonl \
+  --synthetic-train data/ner_synthetic_1000_resume_informed/train.jsonl \
+  --base-model models/resume_ner_synthetic_2000/best \
+  --epochs 2 \
+  --batch-size 8 \
+  --learning-rate 1e-5 \
+  --weight-decay 0.01 \
+  --max-length 512 \
+  --seed 42 \
+  --output-dir models/resume_ner_synthetic_3000 \
+  --metrics-output artifacts/ner_metrics_synthetic_3000.json \
+  --predictions-output artifacts/ner_test_predictions_synthetic_3000.json
+```
+
+For hyperparameter trials, use `--validation-only` so trials do not evaluate the test split. Select settings from validation metrics, then run a final training/evaluation separately.
 
 ## Tests
 
+Run the full test suite from the repository root:
+
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
-The tests cover PDF/DOCX extraction, preprocessing, skill extraction, candidate profiles, embedding dimensions and normalization, FAISS persistence/search, skill matching, scoring, and ranking. The embedding test downloads/loads the real SBERT model and can take longer on the first run.
+The tests cover parsing, preprocessing, information extraction, embeddings, FAISS, matching, ranking, authentication, resume-file access, S3 storage behavior, and NER training utilities. Embedding tests may download or load the Sentence-Transformer model on first execution.
 
-## Current 50% implementation
+## Runtime behavior and privacy
 
-The full local core pipeline is implemented and wired to the UI. It is deliberately modular so cloud storage, APIs, databases, and improved models can replace individual services later.
-
-## Phase 2 / future work
-
-1. Fine-tuned BERT-NER and a larger annotated resume dataset.
-2. PostgreSQL, FastAPI, authentication, and richer job requirement extraction.
-3. Calibrated scoring and evaluation with Precision/Recall/F1, Precision@K, Recall@K, and human-ranking comparison.
-4. AWS S3, EC2, RDS, Docker, and production monitoring.
-5. OCR for scanned resumes, recruiter filters, improved UI, and candidate-facing feedback.
-
-## Known limitations
-
-The information extractor is intentionally a configurable rule/NLP hybrid; it does not claim generic NER understands every resume format. Experience and education matching are simple heuristics, PDF extraction depends on selectable text, and the score has not been validated against hiring outcomes. These are appropriate boundaries for the 50% demonstrator.
+- This is a local prototype, not a production recruitment platform or an automated decision system.
+- NER training data includes synthetic examples. Synthetic augmentation does not prove real-resume generalization.
+- The labeled dataset and test set are small. Projects and certifications lack positive test examples; achievements are not modeled.
+- JD requirement extraction is rule-based. Experience and education matching are intentionally basic.
+- PDF parsing extracts selectable text; image-only/scanned PDFs without a text layer are rejected as unreadable.
+- Local resume files and database records are not encrypted at rest. Passwords are stored as salted PBKDF2-SHA256 hashes and the session cookie is HTTP-only, SameSite=Strict, and valid for 12 hours, but this is not production-grade account/security administration.
+- Do not expose this development server to a network or use it for real hiring decisions without security, privacy, data-retention, evaluation, and human-review controls.
+- The local SQLite database, `.session_secret`, raw resumes, and model cache contain private or runtime data. Fine-tuned model weights can be large. The NER checkpoint and training files are local assets, not application dependencies that are downloaded automatically.

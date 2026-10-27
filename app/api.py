@@ -5,12 +5,14 @@ import hmac
 import json
 import logging
 import os
+import re
 import secrets
 import sys
 import time
 import uuid
 from pathlib import Path
 from threading import Lock
+from urllib.parse import quote
 
 import numpy as np
 from fastapi import Cookie, Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
@@ -18,13 +20,20 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+except ImportError:
+    pass
 os.environ.setdefault("HF_HOME", str(PROJECT_ROOT / "model_cache"))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.config import DATA_DIR
+from app.config import DATA_DIR, VECTOR_STORE_DIR
 from app.services.document_parser import extract_text
 from app.services.embedding_service import EmbeddingService
+from app.services.file_storage import get_resume_file_storage
 from app.services.faiss_service import FaissResumeIndex
 from app.services.information_extractor import CandidateProfile, extract_candidate_info
 from app.services.preprocessing import preprocess_text
@@ -49,11 +58,20 @@ SESSION_SECRET = SESSION_SECRET_PATH.read_text(encoding="utf-8").strip().encode(
 app = FastAPI(title="Resume Analyzer API", version="2.0.0")
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "app" / "static"), name="static")
 pipeline_lock = Lock()
+_FAISS_INDICES: dict[int, FaissResumeIndex] = {}
 
 
 @app.on_event("startup")
 def startup():
     storage.initialize_database()
+    for user_id in storage.list_user_ids():
+        candidates, vectors = _resume_candidates(user_id)
+        if candidates:
+            try:
+                with pipeline_lock:
+                    _get_user_index(user_id, candidates, vectors)
+            except Exception:
+                LOGGER.exception("Could not load or recover FAISS index for user %s", user_id)
 
 
 @app.get("/")
@@ -113,23 +131,21 @@ def setup_status():
 
 @app.post("/api/auth/register")
 async def register(request: Request, response: Response):
-    if storage.user_count() != 0:
-        raise HTTPException(403, "Initial account setup is already complete. Please sign in.")
     payload = await request.json()
     email = str(payload.get("email", "")).strip().lower()
     name = str(payload.get("name", "")).strip()
     password = str(payload.get("password", ""))
-    if len(email) > 254 or "@" not in email or not name or len(name) > 100:
+    if len(email) > 254 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email) or not name or len(name) > 100:
         raise HTTPException(422, "Enter a valid email address and a display name.")
     if len(password) < 12 or len(password) > 256:
         raise HTTPException(422, "Use a password between 12 and 256 characters.")
     try:
-        user_id = storage.create_initial_user(email, name, _password_hash(password))
+        user_id = storage.create_user(email, name, _password_hash(password))
     except ValueError as exc:
-        raise HTTPException(403, str(exc)) from exc
+        raise HTTPException(409, str(exc)) from exc
     except Exception as exc:
-        LOGGER.exception("Initial account creation failed")
-        raise HTTPException(409, "Could not create the initial account. Refresh and try again.") from exc
+        LOGGER.exception("Account creation failed")
+        raise HTTPException(409, "Could not create the account. Please try again.") from exc
     response.set_cookie(SESSION_COOKIE, _make_session(user_id), httponly=True, samesite="strict", secure=request.url.scheme == "https", max_age=SESSION_SECONDS, path="/")
     return {"user": storage.get_user_by_id(user_id)}
 
@@ -161,6 +177,65 @@ def _resume_candidates(user_id: int):
         candidates.append(CandidateProfile(**json.loads(row["profile_json"])))
         vectors.append(np.frombuffer(row["embedding"], dtype="float32").copy())
     return candidates, vectors
+
+
+def _user_index_paths(user_id: int):
+    folder = VECTOR_STORE_DIR / "users" / str(user_id)
+    return folder / "resume.index", folder / "mapping.json"
+
+
+def _persist_user_index(user_id: int, candidates, vectors):
+    index = FaissResumeIndex()
+    if candidates:
+        index.build_index(np.asarray(vectors, dtype="float32"), [candidate.candidate_id for candidate in candidates])
+        index_path, mapping_path = _user_index_paths(user_id)
+        index.save_index(index_path, mapping_path)
+    _FAISS_INDICES[user_id] = index
+    return index
+
+
+def _append_user_index(user_id: int, all_candidates, all_vectors, additions, addition_vectors):
+    expected_ids = [candidate.candidate_id for candidate in all_candidates]
+    existing_ids = expected_ids[:len(expected_ids) - len(additions)]
+    index_path, mapping_path = _user_index_paths(user_id)
+    index = _FAISS_INDICES.get(user_id)
+    if index is None or list(index.mapping.values()) != existing_ids:
+        index = FaissResumeIndex()
+        try:
+            index.load_index(index_path, mapping_path)
+        except (OSError, ValueError, RuntimeError):
+            index = None
+        if index is not None and list(index.mapping.values()) != existing_ids:
+            index = None
+    if index is None:
+        return _persist_user_index(user_id, all_candidates, all_vectors)
+    try:
+        for candidate, vector in zip(additions, addition_vectors):
+            index.add_embedding(vector, candidate.candidate_id)
+        index.save_index(index_path, mapping_path)
+    except Exception:
+        LOGGER.exception("Incremental FAISS update failed; rebuilding from durable SQLite embeddings")
+        return _persist_user_index(user_id, all_candidates, all_vectors)
+    _FAISS_INDICES[user_id] = index
+    return index
+
+
+def _get_user_index(user_id: int, candidates, vectors):
+    expected_ids = [candidate.candidate_id for candidate in candidates]
+    index_path, mapping_path = _user_index_paths(user_id)
+    cached = _FAISS_INDICES.get(user_id)
+    if cached is not None and list(cached.mapping.values()) == expected_ids:
+        return cached
+    if index_path.is_file() and mapping_path.is_file():
+        try:
+            index = FaissResumeIndex()
+            index.load_index(index_path, mapping_path)
+            if list(index.mapping.values()) == expected_ids:
+                _FAISS_INDICES[user_id] = index
+                return index
+        except (OSError, ValueError, RuntimeError):
+            LOGGER.warning("Stored FAISS index for user %s is missing or inconsistent; rebuilding from SQLite", user_id)
+    return _persist_user_index(user_id, candidates, vectors)
 
 
 def _status_for(user_id: int, failures=None):
@@ -199,6 +274,8 @@ def _process_uploads(user_id: int, incoming):
             if not raw_text.strip():
                 raise ValueError("No readable text found; scanned PDFs need OCR before upload")
             candidate = extract_candidate_info(raw_text, uuid.uuid4().hex, Path(filename).name)
+            if candidate.extraction_method.startswith("rules"):
+                LOGGER.info("Rule-based extraction is active (%s) for %s", candidate.extraction_method, filename)
             good.append((candidate, content, content_type))
         except Exception as exc:
             failures.append({"name": filename, "error": str(exc) or exc.__class__.__name__})
@@ -207,8 +284,30 @@ def _process_uploads(user_id: int, incoming):
             with pipeline_lock:
                 embedder = EmbeddingService()
                 embeddings = embedder.generate_embeddings([candidate.embedding_text() for candidate, _, _ in good])
+                file_storage = get_resume_file_storage()
                 for (candidate, content, content_type), vector in zip(good, embeddings):
-                    storage.save_resume(user_id, candidate.filename, content_type, content, candidate.to_dict(), vector)
+                    object_key = None
+                    stored_bytes = content
+                    backend = "sqlite"
+                    if file_storage is not None:
+                        object_key = file_storage.upload(user_id, candidate.candidate_id,
+                                                         candidate.filename, content, content_type)
+                        stored_bytes = b""  # Avoid duplicating original files in SQLite.
+                        backend = "s3"
+                    try:
+                        storage.save_resume(user_id, candidate.filename, content_type, stored_bytes,
+                                            candidate.to_dict(), vector, storage_backend=backend,
+                                            object_key=object_key, file_size=len(content))
+                    except Exception:
+                        if file_storage is not None and object_key:
+                            try:
+                                file_storage.delete(object_key)
+                            except Exception:
+                                LOGGER.exception("Could not remove unreferenced S3 resume %s", object_key)
+                        raise
+                all_candidates, all_vectors = _resume_candidates(user_id)
+                _append_user_index(user_id, all_candidates, all_vectors,
+                                   [candidate for candidate, _, _ in good], list(embeddings))
         except Exception as exc:
             LOGGER.exception("Resume embedding/index creation failed")
             raise HTTPException(500, f"Resumes could not be stored or embedded: {exc}") from exc
@@ -242,11 +341,44 @@ def load_demo(user=Depends(require_user)):
 
 @app.get("/api/resumes")
 def resume_inventory(user=Depends(require_user)):
-    return [{"id": row["id"], "filename": row["filename"], "content_type": row["content_type"], "created_at": row["created_at"], "size_bytes": len(row["file_bytes"])} for row in storage.list_resume_files(user["id"])]
+    return [{"id": row["id"], "filename": row["filename"], "content_type": row["content_type"],
+             "created_at": row["created_at"], "size_bytes": row["file_size"],
+             "storage_backend": row["storage_backend"]}
+            for row in storage.list_resume_files(user["id"])]
+
+
+@app.get("/api/resumes/by-candidate/{candidate_id}/file")
+def get_original_resume(candidate_id: str, user=Depends(require_user)):
+    record = storage.get_resume_file_for_candidate(user["id"], candidate_id)
+    if record is None:
+        raise HTTPException(404, "The original resume was not found in your account.")
+    if record["storage_backend"] == "s3":
+        file_storage = get_resume_file_storage()
+        if file_storage is None or not record["object_key"]:
+            raise HTTPException(503, "The configured resume object store is unavailable.")
+        try:
+            content = file_storage.download(record["object_key"])
+        except Exception as exc:
+            LOGGER.exception("Could not retrieve original resume from S3")
+            raise HTTPException(502, "Could not retrieve the original resume from S3.") from exc
+    else:
+        content = record["file_bytes"]
+    if not content:
+        raise HTTPException(404, "The original resume file is empty or unavailable.")
+    filename = Path(record["filename"]).name
+    return Response(
+        content=content,
+        media_type=record["content_type"] or "application/octet-stream",
+        headers={
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(filename)}",
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @app.post("/api/analyze")
-def analyze(title: str = Form("Untitled role"), job_description: str = Form(...), top_k: int = Form(5), user=Depends(require_user)):
+def analyze(title: str = Form("Untitled role"), job_description: str = Form(...), top_k: int = Form(5, gt=0), user=Depends(require_user)):
     candidates, vectors = _resume_candidates(user["id"])
     if not candidates:
         raise HTTPException(400, "Upload resumes before analyzing candidates.")
@@ -256,10 +388,8 @@ def analyze(title: str = Form("Untitled role"), job_description: str = Form(...)
         with pipeline_lock:
             embedder = EmbeddingService()
             query = embedder.generate_embedding(preprocess_text(job_description))
-        matrix = np.asarray(vectors, dtype="float32")
-        index = FaissResumeIndex()
-        index.build_index(matrix, [candidate.candidate_id for candidate in candidates])
-        retrievals = index.search(query, min(max(1, top_k), len(candidates)))
+            index = _get_user_index(user["id"], candidates, vectors)
+            retrievals = index.search(query, min(max(1, top_k), len(candidates)))
         ranked = rank_candidates(candidates, retrievals, job_description)
         return {"title": title, "results": [item.to_dict() for item in ranked]}
     except Exception as exc:

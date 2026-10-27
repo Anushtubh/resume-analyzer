@@ -22,7 +22,7 @@ def calculate_final_score(semantic: float, skill: float, experience: float, educ
     components = {"semantic": semantic, "skill": skill, "experience": experience, "education": education}
     if any(not 0 <= value <= 1 for value in components.values()):
         raise ValueError("Score components must be between 0 and 1")
-    return sum(components[name] * weights[name] for name in components)
+    return round(sum(components[name] * weights[name] for name in components), 10)
 
 
 def rank_candidates(candidates: list[CandidateProfile], retrievals: list[dict], jd_text: str) -> list[RankedCandidate]:

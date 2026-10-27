@@ -19,7 +19,17 @@ class MatchBreakdown:
 
 
 def _years(text: str) -> float | None:
-    values = [float(value) for value in re.findall(r"(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)", text or "", re.I)]
+    # Support forms such as "3+ years", "2 years 6 months", and "18 months".
+    pattern = re.compile(
+        r"(?<![\w.])(?:(?P<years>\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)"
+        r"(?:\s*(?:and\s*)?(?P<extra_months>\d+)\s*(?:months?|mos?))?|"
+        r"(?P<months>\d+)\s*(?:months?|mos?))(?!\w)", re.I
+    )
+    values = []
+    for match in pattern.finditer(text or ""):
+        years = float(match.group("years") or 0)
+        months = float(match.group("months") or match.group("extra_months") or 0)
+        values.append(years + months / 12)
     return max(values) if values else None
 
 

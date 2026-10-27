@@ -3,6 +3,10 @@ __pycache__/
 .pytest_cache/
 .cache/
 model_cache/
+models/
+artifacts/
+data/ner_*/
+data/server_*.log
 data/talentlens.sqlite3
 data/talentlens.sqlite3-shm
 data/talentlens.sqlite3-wal

@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+from uuid import uuid4
 
 import numpy as np
 
@@ -39,6 +41,8 @@ class FaissResumeIndex:
             self.index = faiss.IndexFlatIP(self.dimension)
         if vector.shape[1] != self.dimension:
             raise ValueError("Embedding dimension does not match the index")
+        if candidate_id in self.mapping.values():
+            raise ValueError(f"Candidate {candidate_id} is already indexed")
         faiss.normalize_L2(vector)
         self.index.add(vector)
         self.mapping[str(self.index.ntotal - 1)] = candidate_id
@@ -62,8 +66,19 @@ class FaissResumeIndex:
             raise ValueError("Cannot save an empty FAISS index")
         index_path, mapping_path = Path(index_path), Path(mapping_path)
         index_path.parent.mkdir(parents=True, exist_ok=True)
-        faiss.write_index(self.index, str(index_path))
-        mapping_path.write_text(json.dumps(self.mapping, indent=2), encoding="utf-8")
+        mapping_path.parent.mkdir(parents=True, exist_ok=True)
+        if self.index.ntotal != len(self.mapping):
+            raise ValueError("FAISS index and candidate mapping are inconsistent")
+        index_tmp = index_path.with_name(f".{index_path.name}.{uuid4().hex}.tmp")
+        mapping_tmp = mapping_path.with_name(f".{mapping_path.name}.{uuid4().hex}.tmp")
+        try:
+            faiss.write_index(self.index, str(index_tmp))
+            mapping_tmp.write_text(json.dumps(self.mapping, indent=2), encoding="utf-8")
+            os.replace(index_tmp, index_path)
+            os.replace(mapping_tmp, mapping_path)
+        finally:
+            index_tmp.unlink(missing_ok=True)
+            mapping_tmp.unlink(missing_ok=True)
 
     def load_index(self, index_path: str | Path, mapping_path: str | Path) -> None:
         import faiss
@@ -71,3 +86,7 @@ class FaissResumeIndex:
         self.index = faiss.read_index(str(index_path))
         self.dimension = self.index.d
         self.mapping = json.loads(Path(mapping_path).read_text(encoding="utf-8"))
+        if self.index.ntotal != len(self.mapping) or set(self.mapping) != {str(i) for i in range(self.index.ntotal)}:
+            self.index = None
+            self.mapping = {}
+            raise ValueError("Saved FAISS index and mapping are inconsistent")

@@ -2046,17 +2046,688 @@ body:not(.authenticated) > .main {
 }
 
 .logout-button {
-  height: 29px;
-  padding: 0 10px;
-  font-size: 10px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px !important;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 9px;
+  border-color: #cbd5e1;
+  color: #24324a;
+  white-space: nowrap;
+}
+
+.logout-button:hover {
+  color: #b42318;
+  border-color: #f0b4ae;
+  background: #fff7f6;
 }
 
 @media (max-width: 520px) {
   .auth-card {
     padding: 28px 22px 22px;
     border-radius: 14px;
+  }
+}
+
+/* Candidate review controls and dense, accessible result cards. */
+.ranking-controls {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 20px 0;
+}
+
+.ranking-controls > label:not(.shortlist-filter-label) select,
+.ranking-search-wrap {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #dfe4ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+}
+
+.ranking-controls select {
+  padding: 0 9px;
+}
+
+.ranking-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: #8591a3;
+}
+
+.ranking-search-wrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #263246;
+}
+
+.ranking-controls select:focus-visible,
+.ranking-search-wrap:focus-within,
+.ranking-controls button:focus-visible,
+.candidate-entry button:focus-visible,
+.candidate-entry a:focus-visible {
+  outline: 3px solid rgba(72, 106, 231, 0.25);
+  outline-offset: 2px;
+}
+
+.shortlist-filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: #4c586b;
+}
+
+.shortlist-filter-label input {
+  width: 16px;
+  height: 16px;
+  accent-color: #486ae7;
+}
+
+.shortlist-storage-note {
+  margin: 6px 20px 0;
+  color: #7b8798;
+  font-size: 12px;
+}
+
+.results-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-secondary {
+  color: #687589;
+}
+
+.summary-role {
+  margin-left: auto;
+  color: #687589;
+}
+
+.live-dot.is-ready {
+  background: #35a77d;
+}
+
+.live-dot.is-loading {
+  background: #486ae7;
+  animation: ranking-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes ranking-pulse {
+  to { opacity: 0.35; }
+}
+
+.results-list {
+  min-width: 0;
+}
+
+.candidate-entry {
+  border-bottom: 1px solid #edf0f5;
+}
+
+.candidate-entry.is-shortlisted {
+  border-left: 3px solid #e7ad4e;
+  padding-left: 8px;
+}
+
+.candidate-row {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 6px;
+  border-bottom: 0;
+  cursor: default;
+}
+
+.candidate-main {
+  min-width: 0;
+}
+
+.candidate-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.candidate-name {
+  margin: 0;
+  color: #253149;
+}
+
+.analysis-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-analyzed {
+  color: #247454;
+  background: #e9f7f1;
+}
+
+.status-unranked {
+  color: #6a7280;
+  background: #f0f2f6;
+}
+
+.candidate-meta {
+  line-height: 1.5;
+}
+
+.candidate-reason {
+  margin: 8px 0 0;
+  color: #59677c;
+  line-height: 1.45;
+}
+
+.candidate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.candidate-action-primary,
+.shortlist-action {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #dce2ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #3f55ad;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-action-primary:hover,
+.shortlist-action:hover {
+  background: #f4f6fd;
+  border-color: #bbc8ec;
+}
+
+.shortlist-action.is-shortlisted {
+  color: #8b5d0d;
+  border-color: #efd69e;
+  background: #fff8e8;
+}
+
+.candidate-resume-link {
+  min-height: 32px;
+  margin: 0;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.candidate-score-wrap {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 105px;
+  padding-top: 2px;
+}
+
+.score-badge {
+  padding: 4px 9px;
+  border: 1px solid #dce4ff;
+  border-radius: 9px;
+  background: #f2f5ff;
+  color: #344bb7;
+  font: 800 19px Manrope, sans-serif;
+  line-height: 1.2;
+}
+
+.score-unavailable {
+  color: #687589;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.score-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.score-info {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #63749a;
+  cursor: help;
+}
+
+.candidate-details {
+  display: none;
+  margin: 0 8px 12px 52px;
+  padding: 14px;
+  border: 1px solid #e8ecf3;
+  border-radius: 9px;
+  background: #fbfcfe;
+  color: #536176;
+}
+
+.candidate-details.open {
+  display: block;
+}
+
+.profile-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px 18px;
+  margin-top: 12px;
+}
+
+.profile-facts > div {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-facts strong,
+.detail-title {
+  color: #354259;
+}
+
+.resume-evidence {
+  margin-top: 12px;
+}
+
+.resume-evidence summary {
+  color: #3f55ad;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resume-evidence p,
+.detail-note {
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.ranking-empty,
+.ranking-filter-empty {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 34px 18px;
+  color: #657187;
+  text-align: center;
+}
+
+.ranking-empty strong {
+  color: #344054;
+}
+
+.ranking-empty p {
+  max-width: 360px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.ranking-empty-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: #f1f4ff;
+  color: #486ae7;
+  font-size: 24px;
+}
+
+.ranking-filter-empty button {
+  border: 0;
+  background: transparent;
+  color: #3f55ad;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ranking-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid #f2c8c4;
+  border-radius: 8px;
+  background: #fff7f6;
+  color: #a33f37;
+}
+
+.ranking-skeleton {
+  display: grid;
+  grid-template-columns: 34px 1fr 90px;
+  gap: 12px;
+  align-items: center;
+  min-height: 95px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.ranking-skeleton > span,
+.ranking-skeleton i,
+.ranking-skeleton b {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef1f6 25%, #f7f8fa 50%, #eef1f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.3s linear infinite;
+}
+
+.ranking-skeleton > span { width: 30px; height: 30px; }
+.ranking-skeleton i { height: 12px; margin: 8px 0; }
+.ranking-skeleton i:last-child { width: 55%; }
+.ranking-skeleton b { width: 70px; height: 34px; }
+
+@keyframes skeleton-shimmer {
+  to { background-position: -200% 0; }
+}
+
+.pool-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pool-shortlist-action {
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 780px) {
+  .ranking-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ranking-search-wrap {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .candidate-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .candidate-score-wrap {
+    grid-column: 2;
+    align-items: flex-start;
+    min-width: 0;
+  }
+  .candidate-details {
+    margin-left: 36px;
+    padding: 10px;
+  }
+  .detail-grid,
+  .profile-facts {
+    grid-template-columns: 1fr;
+  }
+  .ranking-controls {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+  .ranking-summary,
+  .ranking-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Restore the prior shortlist appearance while keeping earlier dashboard styling. */
+.results-summary {
+  display: block;
+}
+
+.candidate-row {
+  grid-template-columns: 29px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 4px;
+  border-bottom: 1px solid #f0f2f5;
+  cursor: pointer;
+}
+
+.candidate-details {
+  display: none;
+  padding: 12px 13px;
+  background: #fafbfe;
+  border-radius: 7px;
+  margin: 0 0 8px 39px;
+  color: #727e90;
+  line-height: 1.7;
+}
+
+.candidate-details.open {
+  display: block;
+}
+
+.candidate-resume-link {
+  min-height: 34px;
+  margin-top: 8px;
+  padding: 0 11px;
+}
+
+.score-label {
+  display: block;
+  text-align: right;
+}
+
+/* Readability pass: raise the small dashboard labels and controls to usable sizes. */
+body {
+  font-size: 16px;
+}
+
+.nav-label,
+.nav-item,
+.workspace strong,
+.workspace small,
+.small-copy,
+.panel-desc,
+.field-row label,
+.field-label,
+.field-label-hint,
+.preset-label,
+.preset-chip,
+.status-message,
+.results-summary,
+.ranking-foot,
+.candidate-meta,
+.score-label,
+.candidate-details,
+.detail-title,
+.chip,
+.warning-item,
+footer,
+.auth-description,
+.auth-label,
+.auth-label-hint,
+.auth-help,
+.pwd-hint-row,
+.auth-error-text,
+.auth-foot,
+.logout-button {
+  font-size: 13px !important;
+}
+
+.field-row input,
+.field-row select,
+.field-row textarea,
+input,
+select,
+textarea,
+.auth-input-box input {
+  font-size: 15px;
+}
+
+.button,
+.context-dropdown button,
+.text-button {
+  font-size: 14px;
+}
+
+.candidate-name {
+  font-size: 15px;
+}
+
+.rank-num {
+  font-size: 13px;
+}
+
+.score {
+  font-size: 18px;
+}
+
+.field-row .top-k-label {
+  min-width: 0;
+}
+
+#top-k {
+  min-height: 42px;
+  padding: 0 9px;
+}
+
+.auth-mode-switch {
+  margin: 16px 0 0;
+  text-align: center;
+  color: #526078;
+  font-size: 14px;
+}
+
+.auth-mode-switch[hidden] {
+  display: none !important;
+}
+
+.auth-mode-button,
+.resume-download-link {
+  border: 0;
+  background: none;
+  color: #3558d4;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.original-resume-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.resume-open-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
+.candidate-resume-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  margin-top: 8px;
+  padding: 0 11px;
+  border: 1px solid #d7def0;
+  border-radius: 8px;
+  background: #f7f9ff;
+  color: #3558d4;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.candidate-resume-link:hover {
+  background: #edf2ff;
+  border-color: #aebdf0;
+}
+
+/* Gentle 3D depth for the main dashboard containers. The pointer position
+   sets a small tilt while hover raises the card; reduced-motion users opt out. */
+.main .tilt-card {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: perspective(1100px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  box-shadow: 0 7px 18px rgba(38, 55, 92, 0.11), 0 2px 5px rgba(38, 55, 92, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  will-change: transform;
+}
+
+.main .tilt-card:hover {
+  transform: perspective(1100px) translateY(-6px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) scale(1.012);
+  box-shadow: 0 16px 34px rgba(38, 55, 92, 0.16), 0 4px 10px rgba(38, 55, 92, 0.08);
+  border-color: #c8d3ed;
+  z-index: 2;
+}
+
+.main .candidate-row.tilt-card:hover {
+  transform: perspective(1100px) translateY(-3px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+}
+
+#stat-card-candidates.tilt-card:hover {
+  transform: perspective(1100px) translateY(-6px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) scale(1.012);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main .tilt-card,
+  .main .tilt-card:hover {
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}
+
+.resume-download-link {
+  font-size: 14px;
+}
+
+.resume-format-note {
+  color: #657187;
+  font-size: 13px;
+}
+
+/* Keep small captions, table text, and form copy readable across every panel. */
+body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(svg):not(path):not(.brand-mark):not(.rank-num):not(.score):not(.live-dot):not(.nav-count) {
+  font-size: max(13px, 0.875em) !important;
+}
+
+@media (max-width: 520px) {
+  body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(svg):not(path):not(.brand-mark):not(.rank-num):not(.score):not(.live-dot):not(.nav-count) {
+    font-size: max(12px, 0.8125em) !important;
   }
 }
 
